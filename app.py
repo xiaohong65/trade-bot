@@ -202,14 +202,14 @@ def scan():
         trend = get_4h_trend(k4h)
 
         if trend == "range":
-            results.append(f"{symbol}: 震荡，跳过")
+            results.append(f"{symbol}:震荡")
             continue
 
         direction = "long" if trend == "bullish" else "short"
         triggered = check_conditions(k1h, direction)
 
         if len(triggered) < 2:
-            results.append(f"{symbol}: {trend}，条件不足({len(triggered)}条)")
+            results.append(f"{symbol}:{trend}({len(triggered)}条)")
             continue
 
         # 有信号
@@ -217,31 +217,26 @@ def scan():
         pos, lev = calc_position(entry, stop)
         strength = "A" if len(triggered) >= 3 else "B"
         dir_cn = "做多" if direction == "long" else "做空"
-        invalid = f"收盘跌破 {stop}" if direction == "long" else f"收盘涨破 {stop}"
+        invalid = f"收盘跌破{stop}" if direction == "long" else f"收盘涨破{stop}"
 
         alert = (
             f"<b>{symbol} | {dir_cn} | 1h</b>\n"
             f"→ 触发：{', '.join(triggered)}\n"
             f"→ 进场：{entry}\n"
-            f"→ 止损：{stop}  （R={r}）\n"
+            f"→ 止损：{stop}（R={r}）\n"
             f"→ 目标：1R {t1} | 2R {t2} | 3R {t3}\n"
-            f"→ 建议仓位：约 {pos} USDT（风险{RISK_PCT}%） 杠杆参考 {lev}x\n"
-            f"→ 信号强度：{strength}\n"
-            f"→ 简评：4h{trend}，规则触发\n"
+            f"→ 仓位：约{pos}U（风险{RISK_PCT}%）杠杆{lev}x\n"
+            f"→ 强度：{strength}\n"
             f"→ 失效：{invalid}"
         )
         send_tg(alert)
-        results.append(f"{symbol}: 已推送 {dir_cn} 信号")
+        results.append(f"{symbol}:已推送{dir_cn}")
         any_signal = True
 
-   # 无论有没有信号都推送
-    if any_signal:
-        for a in alerts:
-            send_tg(a)
-        final_msg = "扫描完成\n" + "\n".join(results)
-    else:
-        status = "扫描完成（无信号）\n" + "\n".join(results)
+    # 无论有没有信号都推送简短状态
+    status = " | ".join(results) if results else "无数据"
+    if not any_signal:
         send_tg(f"<b>定时状态</b>\n{status}")
-        final_msg = status
 
-    return final_msg
+    # 网页只返回很短的内容，避免 cron 报「输出过大」
+    return "ok" if any_signal else f"no signal: {status}"
