@@ -234,10 +234,14 @@ def scan():
         results.append(f"{symbol}: 已推送 {dir_cn} 信号")
         any_signal = True
 
-    if not any_signal:
-        results.append("本次无符合规则的信号")
+   # 无论有没有信号都推送
+    if any_signal:
+        for a in alerts:
+            send_tg(a)
+        final_msg = "扫描完成\n" + "\n".join(results)
+    else:
+        status = "扫描完成（无信号）\n" + "\n".join(results)
+        send_tg(f"<b>定时状态</b>\n{status}")
+        final_msg = status
 
-    return "扫描完成\n" + "\n".join(results)
-
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=10000)
+    return final_msg
